@@ -1,10 +1,9 @@
-/// <reference no-default-lib="true"/>
-/// <reference lib="dom" />
-/// <reference lib="deno.ns" />
-/// <reference lib="esnext" />
+import { Hono } from "@hono/hono";
+import build from "./bundler.ts";
+const app = new Hono();
 
-import { start } from "$fresh/server.ts";
-import config from "./fresh.config.ts";
-import manifest from "./fresh.gen.ts";
+app.post("/*", async (c) => {
+  return c.json(build(await c.req.json()));
+});
 
-await start(manifest, config);
+Deno.serve(app.fetch);
