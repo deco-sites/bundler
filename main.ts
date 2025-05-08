@@ -2,9 +2,13 @@ import { Hono } from "@hono/hono";
 import build from "./bundler.ts";
 const app = new Hono();
 
+const portEnv = Deno.env.get("PORT");
+const port = portEnv ? +portEnv : 8000;
 app.post("/*", async (c) => {
-  console.log("REQUEST");
   return c.res = c.json(await build(await c.req.json()));
 });
 
-Deno.serve(app.fetch);
+Deno.serve({
+  handler: app.fetch,
+  port,
+});
