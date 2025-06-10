@@ -50,6 +50,7 @@ const build = async (
       platform: "browser",
       minify: true,
       sourcemap: false,
+      external: ["node:*"],
       plugins: [
         {
           name: "virtual-filesystem",
