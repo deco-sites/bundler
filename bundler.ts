@@ -102,9 +102,6 @@ const build = async (
             build.onLoad(
               { filter: /.*/, namespace: "virtual" },
               (args) => {
-                if (args.path === "src/productSearch.ts") {
-                  console.log(virtualFiles[args.path]);
-                }
 
                 return Promise.resolve({
                   contents: virtualFiles[args.path],
