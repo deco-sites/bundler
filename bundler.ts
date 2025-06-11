@@ -1,5 +1,6 @@
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader@0.11.1";
 import * as esbuild from "npm:esbuild@0.25.4";
+import path from "node:path";
 
 // Defines the types and client interface for the js-bundler app
 
@@ -24,6 +25,34 @@ export interface BuildResult {
    */
   base64: string;
 }
+
+/**
+ * Resolves the final path of an imported file as if rooted from the project base.
+ *
+ * @param importPath - The path used in the import statement (e.g., '../b.ts')
+ * @param importerPath - The path of the importing file (e.g., './a/main.ts')
+ * @returns The absolute import path relative to project root, prefixed with './'
+ */
+function resolveImportPath(importPath: string, importerPath: string): string {
+  // If importer path is empty, resolve directly from project root
+  if (!importerPath) {
+    const resolvedAbs = path.resolve("./", importPath);
+    const relativeToProjectRoot = path.relative("./", resolvedAbs);
+    return "./" + relativeToProjectRoot;
+  }
+
+  // Get absolute path of importer
+  const importerAbs = path.resolve(importerPath);
+  // Resolve the imported file as if relative to the importer
+  const resolvedAbs = path.resolve(path.dirname(importerAbs), importPath);
+  // Get path relative to project root
+  const relativeToProjectRoot = path.relative("./", resolvedAbs);
+  // Normalize and return
+  return "./" + relativeToProjectRoot;
+}
+
+const ABS_PATH_REGEXP = /^\.\/|^\//;
+
 /**
  * @name JS_BUNDLER_BUILD
  * @title Build JavaScript/TypeScript code
@@ -37,7 +66,7 @@ const build = async (
   // Create a virtual filesystem for esbuild
   const virtualFiles: Record<string, string> = {};
   for (const [path, content] of Object.entries(files)) {
-    virtualFiles[path] = content;
+    virtualFiles[path.replace(ABS_PATH_REGEXP, "")] = content;
   }
 
   try {
@@ -57,12 +86,13 @@ const build = async (
           setup(build) {
             // Handle virtual files
             build.onResolve({ filter: /.*/ }, (args) => {
-              const path = args.path.startsWith("./")
-                ? args.path.slice(2)
-                : args.path;
-              if (virtualFiles[path]) {
+              const path = resolveImportPath(args.path, args.importer);
+
+              const noStartingDotSlash = path.replace(ABS_PATH_REGEXP, "");
+
+              if (virtualFiles[noStartingDotSlash]) {
                 return Promise.resolve({
-                  path: args.path,
+                  path: noStartingDotSlash,
                   namespace: "virtual",
                 });
               }
@@ -72,11 +102,12 @@ const build = async (
             build.onLoad(
               { filter: /.*/, namespace: "virtual" },
               (args) => {
-                const path = args.path.startsWith("./")
-                  ? args.path.slice(2)
-                  : args.path;
+                if (args.path === "src/productSearch.ts") {
+                  console.log(virtualFiles[args.path]);
+                }
+
                 return Promise.resolve({
-                  contents: virtualFiles[path],
+                  contents: virtualFiles[args.path],
                   loader: args.path.endsWith(".ts") ? "ts" : "js",
                 });
               },
