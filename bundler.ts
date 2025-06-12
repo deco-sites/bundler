@@ -1,6 +1,7 @@
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader@0.11.1";
 import * as esbuild from "npm:esbuild@0.25.4";
 import path from "node:path";
+import { builtinModules } from "node:module";
 
 // Defines the types and client interface for the js-bundler app
 
@@ -53,6 +54,9 @@ function resolveImportPath(importPath: string, importerPath: string): string {
 
 const ABS_PATH_REGEXP = /^\.\/|^\//;
 
+const NODEJS_MODULES_RE = new RegExp(`^(node:)?(${builtinModules.join("|")})$`);
+const REQUIRED_NODE_BUILT_IN_NAMESPACE = "node-built-in-modules";
+
 /**
  * @name JS_BUNDLER_BUILD
  * @title Build JavaScript/TypeScript code
@@ -75,11 +79,16 @@ const build = async (
       bundle: true,
       write: false,
       format: "esm",
-      target: "es2020",
-      platform: "browser",
+      target: "es2022",
+      platform: "node", // better leaving node here
       minify: true,
       sourcemap: false,
-      external: ["node:*"],
+      banner: {
+        // This was not made for this, but hackers gonna hack
+        js: `function processCwd() { return '.' }`,
+      },
+      // Maybe we need to define more things here. Maybe test unenv?
+      define: { "process.cwd": "processCwd" },
       plugins: [
         {
           name: "virtual-filesystem",
@@ -102,11 +111,38 @@ const build = async (
             build.onLoad(
               { filter: /.*/, namespace: "virtual" },
               (args) => {
-
                 return Promise.resolve({
                   contents: virtualFiles[args.path],
                   loader: args.path.endsWith(".ts") ? "ts" : "js",
                 });
+              },
+            );
+          },
+        },
+        {
+          /**
+           * Crazy hack copied from the wizard themselves
+           * https://github.com/cloudflare/workers-sdk/blob/91e5f7fd589c1a9e7c249d13dc5e497bebff5ac2/packages/wrangler/src/deployment-bundle/esbuild-plugins/hybrid-nodejs-compat.ts#L83
+           */
+          name: "handle-require-calls-to-nodejs-builtins",
+          setup(build) {
+            build.onResolve({ filter: NODEJS_MODULES_RE }, (args) => {
+              if (args.kind === "require-call") {
+                return {
+                  path: args.path,
+                  namespace: REQUIRED_NODE_BUILT_IN_NAMESPACE,
+                };
+              }
+            });
+            build.onLoad(
+              { filter: /.*/, namespace: REQUIRED_NODE_BUILT_IN_NAMESPACE },
+              ({ path }) => {
+                return {
+                  contents: `import libDefault from 'node:${
+                    path.replace("node:", "")
+                  }'; module.exports = libDefault;`,
+                  loader: "js",
+                };
               },
             );
           },
@@ -121,8 +157,10 @@ const build = async (
       );
     }
 
+    const bundle = result.outputFiles[0].text;
+
     // Return the output content as a string
-    return { base64: btoa(result.outputFiles[0].text) };
+    return { base64: btoa(bundle) };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     throw new Error(`Build failed: ${err.message}`);
