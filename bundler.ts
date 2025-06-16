@@ -76,6 +76,7 @@ const build = async (
   try {
     const result = await esbuild.build({
       entryPoints: [entrypoint ?? "index.ts"],
+      external: [...builtinModules],
       bundle: true,
       write: false,
       format: "esm",
