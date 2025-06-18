@@ -73,6 +73,17 @@ const build = async (
     virtualFiles[path.replace(ABS_PATH_REGEXP, "")] = content;
   }
 
+  // Define the import map as a constant
+  const importMap = {
+    imports: {
+      "@deco/workers-runtime": "jsr:@deco/workers-runtime",
+    },
+  };
+
+  // Convert the import map to a data URI
+  const importMapDataURI = "data:application/json," +
+    encodeURIComponent(JSON.stringify(importMap));
+
   try {
     const result = await esbuild.build({
       entryPoints: [entrypoint ?? "index.ts"],
@@ -148,7 +159,9 @@ const build = async (
             );
           },
         },
-        ...denoPlugins(),
+        ...denoPlugins({
+          importMapURL: importMapDataURI,
+        }),
       ],
     });
 
