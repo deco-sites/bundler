@@ -1,7 +1,8 @@
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader@0.11.1";
-import * as esbuild from "npm:esbuild@0.25.4";
-import path from "node:path";
 import { builtinModules } from "node:module";
+import path from "node:path";
+import * as esbuild from "npm:esbuild@0.25.4";
+import { convertToDenoJson } from "./package-to-deno.ts";
 
 // Defines the types and client interface for the js-bundler app
 
@@ -57,6 +58,14 @@ const ABS_PATH_REGEXP = /^\.\/|^\//;
 const NODEJS_MODULES_RE = new RegExp(`^(node:)?(${builtinModules.join("|")})$`);
 const REQUIRED_NODE_BUILT_IN_NAMESPACE = "node-built-in-modules";
 
+const tryParseJson = (json: string) => {
+  try {
+    return JSON.parse(json);
+  } catch {
+    return {};
+  }
+};
+const PACKAGE_JSON_PATH = "package.json";
 /**
  * @name JS_BUNDLER_BUILD
  * @title Build JavaScript/TypeScript code
@@ -73,10 +82,17 @@ const build = async (
     virtualFiles[path.replace(ABS_PATH_REGEXP, "")] = content;
   }
 
+  const packageJson = PACKAGE_JSON_PATH in files
+    ? files[PACKAGE_JSON_PATH]
+    : null;
+
   // Define the import map as a constant
   const importMap = {
     imports: {
       "@deco/workers-runtime": "jsr:@deco/workers-runtime",
+      ...(packageJson
+        ? convertToDenoJson(tryParseJson(packageJson)).imports
+        : {}),
     },
   };
 
