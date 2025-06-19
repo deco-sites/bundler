@@ -103,7 +103,7 @@ const build = async (
   try {
     const result = await esbuild.build({
       entryPoints: [entrypoint ?? "index.ts"],
-      external: [...builtinModules],
+      external: [...builtinModules, "cloudflare:workers"],
       bundle: true,
       write: false,
       format: "esm",
