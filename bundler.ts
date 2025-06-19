@@ -109,7 +109,8 @@ const build = async (
       format: "esm",
       target: "es2022",
       platform: "node", // better leaving node here
-      minify: true,
+      minify: false,
+      keepNames: true,
       sourcemap: false,
       banner: {
         // This was not made for this, but hackers gonna hack
