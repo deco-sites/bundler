@@ -21,7 +21,7 @@ const JSR_PACKAGE_REGEX = /^(?:npm:)?@jsr\/([^_]+)__([^@]+)@(.+)$/;
  * convertDependency("lodash@4.17.21") // => "npm:lodash@4.17.21"
  */
 function convertDependency(dep: string): string {
-  // Check if it's a JSR package
+  // Check if it's a JSR package (full package spec)
   const jsrMatch = dep.match(JSR_PACKAGE_REGEX);
   if (jsrMatch) {
     const [, scope, name, version] = jsrMatch;
@@ -49,7 +49,13 @@ export function convertToDenoJson(packageJson: PackageJson): DenoJson {
   // Process dependencies
   if (packageJson.dependencies) {
     for (const [name, version] of Object.entries(packageJson.dependencies)) {
-      imports[name] = convertDependency(version);
+      // Check if the version is already a full package spec (like npm:@jsr/...)
+      if (version.includes("@jsr/") || version.startsWith("npm:")) {
+        imports[name] = convertDependency(version);
+      } else {
+        // Regular version string, construct the full package spec
+        imports[name] = `npm:${name}@${version}`;
+      }
     }
   }
 
@@ -58,7 +64,13 @@ export function convertToDenoJson(packageJson: PackageJson): DenoJson {
     for (
       const [name, version] of Object.entries(packageJson.peerDependencies)
     ) {
-      imports[name] = convertDependency(version);
+      // Check if the version is already a full package spec (like npm:@jsr/...)
+      if (version.includes("@jsr/") || version.startsWith("npm:")) {
+        imports[name] = convertDependency(version);
+      } else {
+        // Regular version string, construct the full package spec
+        imports[name] = `npm:${name}@${version}`;
+      }
     }
   }
 
