@@ -191,7 +191,7 @@ const build = async (
     const bundle = result.outputFiles[0].text;
 
     // Return the output content as a string
-    return { base64: btoa(bundle) };
+    return { base64: btoa(unescape(encodeURIComponent(bundle))) };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     throw new Error(`Build failed: ${err.message}`);

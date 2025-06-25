@@ -53,8 +53,8 @@ export function convertToDenoJson(packageJson: PackageJson): DenoJson {
       if (version.includes("@jsr/") || version.startsWith("npm:")) {
         imports[name] = convertDependency(version);
       } else {
-        // Regular version string, construct the full package spec
         imports[name] = `npm:${name}@${version}`;
+        imports[name + "/"] = `npm:/${name}@${version}/`;
       }
     }
   }
@@ -70,6 +70,7 @@ export function convertToDenoJson(packageJson: PackageJson): DenoJson {
       } else {
         // Regular version string, construct the full package spec
         imports[name] = `npm:${name}@${version}`;
+        imports[name + "/"] = `npm:/${name}@${version}/`;
       }
     }
   }
