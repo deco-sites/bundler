@@ -70,11 +70,11 @@ jobs:
 
           WORKDIR /app
 
-          # Install dependencies including git, openssh, and Node.js
-          RUN apk add --update --no-cache nodejs npm
+          # Install dependencies and Node.js
+          RUN apk update && apk add --no-cache nodejs npm
 
-          # Install wrangler CLI globally
-          RUN npm install -g wrangler
+          # Verify npm is available and install wrangler CLI globally
+          RUN npm --version && npm install -g wrangler
 
           # Set up directories and permissions
           RUN mkdir -p /home/deno && chown -R deno:deno /home/deno && mkdir /app/deco && chown -R deno:deno /app && mkdir -p /deno-dir && chown -R deno:deno /deno-dir && chown -R deno:deno /daemon-deno-dir
