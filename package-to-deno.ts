@@ -28,11 +28,6 @@ function convertDependency(dep: string): string {
     return `jsr:@${scope}/${name}@${version}`;
   }
 
-  // If it doesn't start with npm: and it's not a JSR package, add npm: prefix
-  if (!dep.startsWith("npm:")) {
-    return `npm:${dep}`;
-  }
-
   // Already has npm: prefix and is not a JSR package
   return dep;
 }
@@ -46,32 +41,26 @@ function convertDependency(dep: string): string {
 export function convertToDenoJson(packageJson: PackageJson): DenoJson {
   const imports: Record<string, string> = {};
 
-  // Process dependencies
-  if (packageJson.dependencies) {
-    for (const [name, version] of Object.entries(packageJson.dependencies)) {
-      // Check if the version is already a full package spec (like npm:@jsr/...)
-      if (version.includes("@jsr/") || version.startsWith("npm:")) {
-        imports[name] = convertDependency(version);
-      } else {
-        imports[name] = `npm:${name}@${version}`;
-        imports[name + "/"] = `npm:/${name}@${version}/`;
-      }
-    }
-  }
+  const deps = {
+    ...packageJson.dependencies,
+    ...packageJson.peerDependencies,
+  };
 
-  // Process peerDependencies
-  if (packageJson.peerDependencies) {
-    for (
-      const [name, version] of Object.entries(packageJson.peerDependencies)
-    ) {
-      // Check if the version is already a full package spec (like npm:@jsr/...)
-      if (version.includes("@jsr/") || version.startsWith("npm:")) {
-        imports[name] = convertDependency(version);
-      } else {
-        // Regular version string, construct the full package spec
-        imports[name] = `npm:${name}@${version}`;
-        imports[name + "/"] = `npm:/${name}@${version}/`;
+  // Process dependencies
+  for (const [name, dep] of Object.entries(deps)) {
+    // Check if the version is already a full package spec (like npm:@jsr/...)
+    if (dep.startsWith("npm:")) {
+      const jsrMatch = dep.match(JSR_PACKAGE_REGEX);
+      if (!jsrMatch) {
+        continue;
       }
+      const [, scope, name, version] = jsrMatch;
+
+      imports[name] = `jsr:@${scope}/${name}@${version}`;
+      imports[name + "/"] = `jsr:/@${scope}/${name}@${version}/`;
+    } else {
+      imports[name] = `npm:${name}@${dep}`;
+      imports[name + "/"] = `npm:/${name}@${dep}/`;
     }
   }
 
