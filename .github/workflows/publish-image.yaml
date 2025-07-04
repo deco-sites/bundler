@@ -65,6 +65,9 @@ jobs:
 
           WORKDIR /app
 
+          # Set library path for compatibility between Deno and Node.js
+          ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib
+
           # Install Node.js and npm from Alpine packages
           RUN apk update && apk add --no-cache nodejs npm
 
