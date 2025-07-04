@@ -1,7 +1,6 @@
 import { join } from "jsr:@std/path@1.0.8";
 
 
-export const CMD = "wrangler-deno";
 // Defines the types and client interface for the js-bundler app
 
 export interface BuildOptions {
@@ -149,8 +148,8 @@ const build = async (
 
     // Run wrangler deploy --dry-run --outdir ./dist
     console.log(`Running: wrangler deploy --dry-run --outdir ./dist`);
-    const command = new Deno.Command("wrangler", {
-      args: ["deploy", "--dry-run", "--outdir", "./dist"],
+    const command = new Deno.Command("npx", {
+      args: ["wrangler", "deploy", "--dry-run", "--outdir", "./dist"],
       cwd: buildPath,
       stdout: "piped",
       stderr: "piped",
