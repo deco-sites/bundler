@@ -64,10 +64,10 @@ jobs:
 
           # Install Deno from official source
           RUN curl -fsSL https://deno.land/install.sh | sh
-          RUN cp /root/.deno/bin/deno /usr/local/bin/deno && chmod +x /usr/local/bin/deno
+          RUN ln -s /root/.deno/bin/deno /usr/local/bin/deno
 
           # Verify installations
-          RUN node --version && npm --version && npx --version && /usr/local/bin/deno --version
+          RUN node --version && npm --version && npx --version && deno --version
 
           # Cache deno dependencies
           RUN DENO_DIR=/daemon-deno-dir deno cache jsr:@deco/deco@$IMAGE_TAG_COMMIT/scripts/run
