@@ -62,8 +62,8 @@ jobs:
           # Install Node.js and npm from Alpine repos
           RUN apk update && apk add --no-cache nodejs npm curl unzip
 
-          # Install Deno from official source
-          RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -y
+          # Install Deno via npm
+          RUN npm install -g deno
 
           # Verify installations
           RUN node --version && npm --version && npx --version && deno --version
