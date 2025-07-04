@@ -63,8 +63,7 @@ jobs:
           RUN apk update && apk add --no-cache nodejs npm curl unzip
 
           # Install Deno from official source
-          RUN curl -fsSL https://deno.land/install.sh | sh
-          RUN ln -s /root/.deno/bin/deno /usr/local/bin/deno
+          RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -y
 
           # Verify installations
           RUN node --version && npm --version && npx --version && deno --version
