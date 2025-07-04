@@ -52,20 +52,28 @@ jobs:
 
           # Get the current tag and create the Dockerfile
           cat <<EOF > Dockerfile
-          FROM denoland/deno:alpine-2.4.0
+          FROM alpine:3.22
 
           # The port that your application listens to.
           EXPOSE 8000
 
           WORKDIR /app
 
-          # Install Node.js and npm
-          RUN apk update && apk add --no-cache nodejs npm
+          # Install Node.js and npm from Alpine repos
+          RUN apk update && apk add --no-cache nodejs npm curl unzip
+
+          # Install Deno from official source
+          RUN curl -fsSL https://deno.land/install.sh | sh
+          RUN mv /root/.deno/bin/deno /usr/local/bin/deno
 
           # Verify installations
           RUN node --version && npm --version && npx --version && deno --version
 
-          # Set up directories and permissions
+          # Cache deno dependencies
+          RUN DENO_DIR=/daemon-deno-dir deno cache jsr:@deco/deco@$IMAGE_TAG_COMMIT/scripts/run
+
+          # Create deno user and set up directories
+          RUN addgroup -g 1000 deno && adduser -u 1000 -G deno -s /bin/sh -D deno
           RUN mkdir -p /home/deno && chown -R deno:deno /home/deno && mkdir /app/deco && chown -R deno:deno /app && mkdir -p /deno-dir && chown -R deno:deno /deno-dir && chown -R deno:deno /daemon-deno-dir
 
           # Prefer not to run as root.
